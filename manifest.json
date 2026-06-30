@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "轮播图助手",
+  "version": "1.8.0",
+  "description": "微信公众号图文编辑页面图片采集与轮播代码生成",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mp.weixin.qq.com/*",
+        "http://mp.weixin.qq.com/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

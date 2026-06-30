@@ -1,0 +1,318 @@
+/**
+ * styles.css — 插件面板样式
+ */
+
+/* 面板容器 */
+#img-collector-panel {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  width: 320px;
+  max-height: calc(100vh - 140px);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题栏 */
+.panel-header {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.panel-toggle-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.panel-toggle-btn:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* 内容区 */
+.panel-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-body.collapsed {
+  display: none;
+}
+
+/* 主按钮 */
+.btn-primary {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+/* 次要按钮 */
+.btn-secondary {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #eee;
+}
+
+/* 危险按钮 */
+.btn-danger {
+  padding: 8px 16px;
+  background: #fff;
+  color: #f56c6c;
+  border: 1px solid #f56c6c;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  background: #f56c6c;
+  color: #fff;
+}
+
+/* 图标按钮 */
+.btn-icon {
+  padding: 4px 8px;
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #07c160;
+  color: #fff;
+}
+
+.btn-icon-danger {
+  color: #f56c6c;
+}
+
+.btn-icon-danger:hover {
+  background: #f56c6c;
+  color: #fff;
+}
+
+.btn-move {
+  color: #07c160;
+}
+
+.btn-move:hover {
+  background: #07c160;
+  color: #fff;
+}
+
+.btn-move:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-move:disabled:hover {
+  background: #f5f5f5;
+  color: #07c160;
+}
+
+/* 图片列表区 */
+.image-list-header {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.image-list-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 图片列表 */
+.image-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.empty-tip {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 图片项 */
+.image-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.15s;
+  cursor: default;
+}
+
+.image-item:last-child {
+  border-bottom: none;
+}
+
+.image-item:hover {
+  background: #fafafa;
+}
+
+.image-item.flash-highlight {
+  background: #d4f8d4;
+  transition: background 0.3s;
+}
+
+.image-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #333;
+  margin-right: 8px;
+}
+
+.image-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 操作按钮区 */
+.image-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.image-actions .btn-secondary {
+  flex: 1;
+}
+
+.image-actions .btn-danger {
+  flex: 1;
+}
+
+/* 代码预览区 */
+.code-preview-header {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  padding: 4px 0;
+  border-top: 1px solid #eee;
+}
+
+.code-preview {
+  background: #f8f8f8;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.code-preview pre {
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* 复制按钮区 */
+.copy-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.copy-actions .btn-primary {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+/* 滚动条样式 */
+.image-list::-webkit-scrollbar,
+.code-preview::-webkit-scrollbar {
+  width: 6px;
+}
+
+.image-list::-webkit-scrollbar-thumb,
+.code-preview::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.image-list::-webkit-scrollbar-track,
+.code-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
