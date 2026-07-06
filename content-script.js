@@ -303,6 +303,14 @@ function createPanel() {
         </div>
         <div class="size-list" id="sizeList"></div>
         <button class="btn-primary btn-small" id="syncSizeBtn" disabled>应用选中尺寸</button>
+        <div class="custom-size-section" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+          <div style="font-size: 12px; color: #666; margin-bottom: 6px;">或自定义高度（宽度自动等比）</div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="number" id="customHeightInput" placeholder="输入高度，如 400" style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+            <span style="color: #999; font-size: 12px;">px</span>
+            <button class="btn-secondary btn-small" id="applyCustomHeightBtn" style="padding: 6px 12px;">应用</button>
+          </div>
+        </div>
       </div>
 
       <div class="code-preview-header" id="codeToggle" style="cursor:pointer;user-select:none;">
@@ -453,6 +461,19 @@ function bindPanelEvents() {
   document.getElementById('syncSizeBtn').addEventListener('click', () => {
     if (!pluginEnabled) return;
     applySelectedSize();
+  });
+
+  document.getElementById('applyCustomHeightBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
+    const input = document.getElementById('customHeightInput');
+    const height = parseInt(input.value);
+    if (!height || height <= 0) {
+      showCopyTip('请输入有效的高度值');
+      return;
+    }
+    targetImageSize = { height: height };
+    updateCarouselPreview();
+    showCopyTip(`已按自定义高度 ${height}px 统一图片尺寸`);
   });
 }
 
