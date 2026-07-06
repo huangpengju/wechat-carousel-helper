@@ -121,10 +121,9 @@ function generateCarouselHTML(images) {
     })
     .join('\n');
 
-  // 滚动指示器圆点
-  const dots = images.map((_, idx) => {
-    const isFirst = idx === 0;
-    return `<section style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${isFirst ? '#666' : '#ccc'}; margin: 0 2px; vertical-align: middle;"></section>`;
+  // 滚动指示器圆点（统一颜色）
+  const dots = images.map(() => {
+    return `<section style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #999; margin: 0 2px; vertical-align: middle;"></section>`;
   }).join('');
 
   return `<section _editor copyright="huangpengju" style="background-repeat: repeat; background-position: left top; background-size: auto; text-align: center;">
