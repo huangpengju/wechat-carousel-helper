@@ -109,9 +109,9 @@ function generateCarouselHTML(images) {
       if (targetImageSize && window._detectedSizes && window._detectedSizes[idx]) {
         const originalSize = window._detectedSizes[idx];
         const scaledWidth = Math.round(originalSize.width * (targetImageSize.height / originalSize.height));
-        // 使用 height: 100% 让图片填满容器高度，width: auto 保持比例，overflow: hidden 裁剪多余部分
+        // 使用固定像素值 + !important 覆盖 WeChat 可能添加的任何默认样式
         return `<section style="${wrapperStyle} width: ${scaledWidth}px; height: ${targetImageSize.height}px; overflow: hidden; border-radius: 6px; flex-shrink: 0;">
-  <img style="height: 100% !important; width: auto !important; max-width: none !important; vertical-align: top; border-radius: 6px; display: block;" src="${img.url}" />
+  <img width="${scaledWidth}" height="${targetImageSize.height}" style="width: ${scaledWidth}px !important; height: ${targetImageSize.height}px !important; object-fit: cover !important; vertical-align: top; border-radius: 6px; display: block;" src="${img.url}" />
 </section>`;
       }
 
