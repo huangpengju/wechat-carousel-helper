@@ -78,15 +78,17 @@ async function collectSingleImage(imgElement) {
 // ============================================================
 // 轮播代码生成
 // ============================================================
+let targetImageSize = null; // 用户选择的参考高度
+
 function generateCarouselHTML(images) {
   if (!images || images.length === 0) {
     return '<!-- 暂无图片，请先采集图片 -->';
   }
 
   const n = images.length;
-  const percent = 100 / n;
-  const maxPercent = n * 100;
+  const uid = 'c' + Date.now();
 
+  // 生成图片 JSON 配置（用于微信编辑器识别）
   const imgsJson = images
     .map(() => {
       return `{"w":1440,"h":1863,"imgid":"${Math.floor(10000000 + Math.random() * 90000000)}","group":"202633605"}`;
@@ -95,35 +97,53 @@ function generateCarouselHTML(images) {
 
   const dataJson = `%7B%22custom%22%3A%7B%22imgs%22%3A%5B${imgsJson}%5D%7D%2C%22id%22%3A%2213%22%7D`;
 
+  // 图片区块
   const imgSections = images
-    .map((img) => {
-      return `                                <section style="vertical-align: top; display: inline-block; width:${percent.toFixed(2)}%; text-align: center;"><img
-                                        style="visibility:visible !important;width:100% !important; height:auto !important;vertical-align:top;user-select:none;display:inline-block;"
-                                        src="${img.url}" />
-                                </section>`;
+    .map((img, idx) => {
+      const marginLeft = idx === 0 ? '0' : '4px';
+      const marginRight = idx === n - 1 ? '0' : '4px';
+      let imgHtml = `<img style="vertical-align: top; border-radius: 6px;" src="${img.url}" />`;
+
+      // 如果设置了参考高度，按比例调整宽度
+      if (targetImageSize && window._detectedSizes && window._detectedSizes[idx]) {
+        const originalSize = window._detectedSizes[idx];
+        const scaledWidth = Math.round(originalSize.width * (targetImageSize.height / originalSize.height));
+        imgHtml = `<img width="${scaledWidth}" height="${targetImageSize.height}" style="vertical-align: top; border-radius: 6px;" src="${img.url}" />`;
+      }
+
+      return `<section style="vertical-align: top; display: inline-block; text-align: center; font-size: 0; line-height: 0; margin: 0 ${marginRight} 0 ${marginLeft};">
+    ${imgHtml}
+</section>`;
     })
     .join('\n');
 
-  // 生成唯一 ID（用于关联可滚动区域）
-  const uid = 'c' + Date.now();
+  // 滚动指示器圆点
+  const dots = images.map((_, idx) => {
+    const isFirst = idx === 0;
+    return `<section style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${isFirst ? '#666' : '#ccc'}; margin: 0 2px; vertical-align: middle;"></section>`;
+  }).join('');
 
-  return `<section _editor copyright="huangpengju"
-    style="background-repeat:repeat;background-position:left top;background-size:auto;text-align:center;">
-    <section class="block" style="margin:0;padding:0;text-align:left;">
+  return `<section _editor copyright="huangpengju" style="background-repeat: repeat; background-position: left top; background-size: auto; text-align: center;">
+    <section class="block" style="margin: 0; padding: 0; text-align: left;">
         <section class="block-inner">
             <section _editor>
-                <section class="svg"
-                    data-json="${dataJson}">
-                    <section style="transform:scale(1);line-height:0;font-size:0;padding:0;margin:0;">
-                        <section
-                            style="overflow-x:overlay;overflow-y:hidden;-webkit-overflow-scrolling:touch;vertical-align:top;display:inline-block;width:100%;">
-                            <section id="${uid}"
-                                style="white-space:nowrap;overflow:hidden;max-width:${maxPercent}% !important;width:${maxPercent}%;line-height:0;font-size:0;">
+                <section class="svg" data-json="${dataJson}">
+                    <section style="transform: scale(1); line-height: 0; font-size: 0; padding: 0; margin: 0;">
+                        <section style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; vertical-align: top; display: block; width: 100%;">
+                            <section id="${uid}" style="white-space: nowrap; overflow-x: scroll; overflow-y: hidden; line-height: 0; font-size: 0; display: inline-block; width: max-content; min-width: 100%;">
 ${imgSections}
                             </section>
                         </section>
-                        <section style="text-align:center;padding:8px 0 0;font-size:12px;color:#999;letter-spacing:2px;">
-                            &lt;&lt;&lt; 左右滑动查看更多 &gt;&gt;&gt;
+                        <section style="text-align: center; padding: 12px 0 0; font-size: 0;">
+                            <section style="display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;">
+                                ${dots}
+                            </section>
+                        </section>
+                        <section style="text-align: center; padding: 10px 0 0; font-size: 0;">
+                            <section style="display: inline-block; background: #f5f5f5; border-radius: 16px; padding: 6px 16px; margin: 0 auto;">
+                                <p style="margin: 0; font-size: 12px; color: #666; letter-spacing: 1px; line-height: 1.6;">←左右滑动查看更多→</p>
+                                <p style="margin: 0; font-size: 11px; color: #999; letter-spacing: 0.5px; line-height: 1.6;">Slide for more photos</p>
+                            </section>
                         </section>
                     </section>
                 </section>
@@ -191,28 +211,76 @@ function showCopyTip(message) {
 }
 
 // ============================================================
+// 存储层 - 插件开关状态
+// ============================================================
+const PLUGIN_ENABLED_KEY = 'pluginEnabled';
+
+async function getPluginEnabled() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(PLUGIN_ENABLED_KEY, (result) => {
+      resolve(result[PLUGIN_ENABLED_KEY] ?? true);
+    });
+  });
+}
+
+async function setPluginEnabled(enabled) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [PLUGIN_ENABLED_KEY]: enabled }, resolve);
+  });
+}
+
+// ============================================================
 // 面板 UI
 // ============================================================
 let panel = null;
+let panelToggleBtn = null;
 let currentImages = [];
+let pluginEnabled = true;
 
 function initPanel() {
   if (panel) return;
-  getImages().then((imgs) => {
-    currentImages = imgs;
-    createPanel();
-    renderImageList();
-    updateCarouselPreview();
+  getPluginEnabled().then((enabled) => {
+    pluginEnabled = enabled;
+    getImages().then((imgs) => {
+      currentImages = imgs;
+      createPanel();
+      renderImageList();
+      updateCarouselPreview();
+      updatePanelVisibility();
+    });
   });
 }
 
 function createPanel() {
+  // 创建悬浮小按钮
+  panelToggleBtn = document.createElement('div');
+  panelToggleBtn.id = 'img-collector-toggle';
+  panelToggleBtn.innerHTML = `
+    <div class="toggle-icon" id="toggleIcon">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+    </div>
+    <div class="toggle-dot" id="toggleDot"></div>
+  `;
+  document.body.appendChild(panelToggleBtn);
+
+  // 创建主面板
   panel = document.createElement('div');
   panel.id = 'img-collector-panel';
   panel.innerHTML = `
     <div class="panel-header" id="panelDragHandle" style="cursor:move;">
       <span class="panel-title">🖼 轮播图助手</span>
-      <button class="panel-toggle-btn" id="panelToggleBtn" title="收起面板">−</button>
+      <div class="panel-header-right">
+        <label class="switch-label" title="插件开关">
+          <input type="checkbox" id="pluginSwitch" checked>
+          <span class="switch-slider"></span>
+        </label>
+        <button class="panel-toggle-btn" id="panelToggleClose" title="收起面板">−</button>
+      </div>
     </div>
     <div class="panel-body" id="panelBody">
       <button class="btn-primary" id="collectBtn">一键采集全部图片</button>
@@ -225,6 +293,15 @@ function createPanel() {
       <div class="image-actions">
         <button class="btn-secondary" id="addUrlBtn">+ 添加链接</button>
         <button class="btn-danger" id="clearBtn">清空</button>
+      </div>
+
+      <div class="size-sync-section" id="sizeSyncSection" style="display:none;">
+        <div class="size-sync-header">
+          <span>📐 尺寸统一</span>
+          <button class="btn-icon" id="refreshSizeBtn" title="刷新尺寸">↻</button>
+        </div>
+        <div class="size-list" id="sizeList"></div>
+        <button class="btn-primary btn-small" id="syncSizeBtn" disabled>应用选中尺寸</button>
       </div>
 
       <div class="code-preview-header" id="codeToggle" style="cursor:pointer;user-select:none;">
@@ -240,18 +317,65 @@ function createPanel() {
       </div>
     </div>
   `;
+  panel.style.display = 'none';
   document.body.appendChild(panel);
   bindPanelEvents();
 }
 
+function updatePanelVisibility() {
+  if (!panelToggleBtn) return;
+  const toggleDot = document.getElementById('toggleDot');
+  if (toggleDot) {
+    toggleDot.style.background = pluginEnabled ? '#07c160' : '#999';
+  }
+}
+
+function showPanel() {
+  if (!panel) return;
+  panel.style.display = 'flex';
+  panelToggleBtn.classList.add('hidden');
+}
+
+function hidePanel() {
+  if (!panel) return;
+  panel.style.display = 'none';
+  if (panelToggleBtn) panelToggleBtn.classList.remove('hidden');
+}
+
 function bindPanelEvents() {
+  // 悬浮小按钮点击显示面板
+  panelToggleBtn.addEventListener('click', () => {
+    showPanel();
+  });
+
+  // 关闭按钮收起面板
+  document.getElementById('panelToggleClose').addEventListener('click', () => {
+    hidePanel();
+  });
+
+  // 插件开关
+  const pluginSwitch = document.getElementById('pluginSwitch');
+  pluginSwitch.checked = pluginEnabled;
+  pluginSwitch.addEventListener('change', async (e) => {
+    pluginEnabled = e.target.checked;
+    await setPluginEnabled(pluginEnabled);
+    updatePanelVisibility();
+    if (!pluginEnabled) {
+      showCopyTip('🚫 插件已禁用');
+    } else {
+      showCopyTip('✅ 插件已启用');
+    }
+  });
+
   document.getElementById('collectBtn').addEventListener('click', async () => {
+    if (!pluginEnabled) return;
     currentImages = await collectFromEditor();
     renderImageList();
     updateCarouselPreview();
   });
 
   document.getElementById('clearBtn').addEventListener('click', async () => {
+    if (!pluginEnabled) return;
     if (confirm('确定清空所有图片？')) {
       await clearImages();
       currentImages = [];
@@ -261,6 +385,7 @@ function bindPanelEvents() {
   });
 
   document.getElementById('addUrlBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
     const url = prompt('请输入图片链接：');
     if (url && url.startsWith('http')) {
       addImageByUrl(url);
@@ -268,22 +393,13 @@ function bindPanelEvents() {
   });
 
   document.getElementById('copyTextBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
     copyAsPlainText(document.getElementById('codePreview').textContent);
   });
 
   document.getElementById('copyRichBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
     copyAsRichText(document.getElementById('codePreview').textContent);
-  });
-
-  // 面板折叠/展开
-  let panelCollapsed = false;
-  const toggleBtn = document.getElementById('panelToggleBtn');
-  const panelBody = document.getElementById('panelBody');
-  toggleBtn.addEventListener('click', () => {
-    panelCollapsed = !panelCollapsed;
-    panelBody.style.display = panelCollapsed ? 'none' : 'flex';
-    toggleBtn.textContent = panelCollapsed ? '+' : '−';
-    toggleBtn.title = panelCollapsed ? '展开面板' : '收起面板';
   });
 
   // 代码预览折叠/展开
@@ -301,7 +417,7 @@ function bindPanelEvents() {
   let dragging = false, dragOffsetX = 0, dragOffsetY = 0;
 
   dragHandle.addEventListener('mousedown', (e) => {
-    if (e.target === toggleBtn) return;
+    if (e.target.closest('.switch-label') || e.target.closest('#panelToggleClose')) return;
     dragging = true;
     dragOffsetX = e.clientX - panel.offsetLeft;
     dragOffsetY = e.clientY - panel.offsetTop;
@@ -318,6 +434,97 @@ function bindPanelEvents() {
   document.addEventListener('mouseup', () => {
     dragging = false;
   });
+
+  // 尺寸统一功能
+  document.getElementById('refreshSizeBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
+    detectAndShowSizes();
+  });
+
+  document.getElementById('syncSizeBtn').addEventListener('click', () => {
+    if (!pluginEnabled) return;
+    applySelectedSize();
+  });
+}
+
+// 检测图片尺寸并显示
+async function detectAndShowSizes() {
+  const section = document.getElementById('sizeSyncSection');
+  const sizeList = document.getElementById('sizeList');
+  const syncBtn = document.getElementById('syncSizeBtn');
+
+  if (currentImages.length === 0) {
+    showCopyTip('请先采集图片');
+    return;
+  }
+
+  section.style.display = 'block';
+  sizeList.innerHTML = '<div class="size-loading">检测图片尺寸中...</div>';
+
+  const sizes = await detectImageSizes(currentImages.map(img => img.url));
+
+  if (sizes.length === 0) {
+    sizeList.innerHTML = '<div class="size-loading">无法检测图片尺寸</div>';
+    return;
+  }
+
+  // 显示尺寸列表，默认选中第一项
+  sizeList.innerHTML = sizes.map((size, idx) => `
+    <div class="size-item ${idx === 0 ? 'selected' : ''}" data-index="${idx}" data-width="${size.width}" data-height="${size.height}">
+      <span class="size-info">${size.width} × ${size.height}</span>
+      <span class="size-ratio">${size.width / size.height < 1 ? '竖图' : '横图'}</span>
+    </div>
+  `).join('');
+
+  // 存储检测到的尺寸
+  window._detectedSizes = sizes;
+  syncBtn.disabled = false;
+
+  // 点击选择尺寸
+  sizeList.querySelectorAll('.size-item').forEach(item => {
+    item.addEventListener('click', () => {
+      sizeList.querySelectorAll('.size-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+    });
+  });
+
+  // 自动应用第一个的图片高度作为参考
+  const firstSize = sizes[0];
+  if (firstSize) {
+    targetImageSize = { height: firstSize.height };
+    updateCarouselPreview();
+    showCopyTip(`已按首图高度 ${firstSize.height}px 统一尺寸`);
+  }
+}
+
+// 检测一组图片的尺寸
+function detectImageSizes(urls) {
+  return Promise.all(urls.map(url => {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  })).then(results => results.filter(Boolean));
+}
+
+// 应用选中的尺寸到轮播代码
+function applySelectedSize() {
+  const sizeList = document.getElementById('sizeList');
+  const selected = sizeList.querySelector('.size-item.selected');
+
+  if (!selected) {
+    showCopyTip('请先选择参考尺寸');
+    return;
+  }
+
+  const targetHeight = parseInt(selected.dataset.height);
+
+  targetImageSize = { height: targetHeight };
+
+  showCopyTip(`已按高度 ${targetHeight}px 统一图片尺寸`);
+  updateCarouselPreview();
 }
 
 async function addImageByUrl(url) {
@@ -359,6 +566,9 @@ async function renderImageList() {
     })
     .join('');
 
+  // 自动检测图片尺寸
+  setTimeout(() => detectAndShowSizes(), 500);
+
   listEl.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -379,7 +589,6 @@ async function renderImageList() {
         renderImageList();
         updateCarouselPreview();
         showCopyTip(`✅ 已移至第 ${newIdx + 1} 位`);
-        // 闪烁高亮被移动的项
         setTimeout(() => {
           const item = listEl.querySelector(`[data-url="${url}"]`);
           if (item) {
@@ -413,22 +622,24 @@ function updateCarouselPreview() {
 }
 
 // ============================================================
-// 编辑区单图点击采集（鼠标悬停时显示采集提示）
+// 编辑区单图点击采集
 // ============================================================
-// 编辑区点击采集
-// ============================================================
+let editorBindingDone = false;
+
 function initEditorInteraction() {
   setTimeout(() => {
-    bindEditorContainerEvent();
+    if (!editorBindingDone) {
+      bindEditorContainerEvent();
+      editorBindingDone = true;
+    }
   }, 2000);
 }
 
 function bindEditorContainerEvent() {
-  // 在 document 级别用 capture phase 监听所有 mousedown
-  // 这样无论图片在哪个 iframe 或嵌套容器中，都能捕获到
   document.addEventListener(
     'mousedown',
     (e) => {
+      if (!pluginEnabled) return;
       const path = e.composedPath();
       const target = path.find(
         (el) => el.nodeType === 1 && el.tagName === 'IMG' && (el.dataset.src || el.src)
@@ -448,7 +659,7 @@ function bindEditorContainerEvent() {
 function bootstrap() {
   initPanel();
   initEditorInteraction();
-  console.log('[轮播图助手] 插件已加载 v1.1');
+  console.log('[轮播图助手] 插件已加载');
 }
 
 if (document.readyState === 'loading') {
