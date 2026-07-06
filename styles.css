@@ -287,10 +287,15 @@
 
 /* 图片列表 */
 .image-list {
-  max-height: 200px;
+  max-height: 160px;
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 6px;
+  transition: max-height 0.3s ease;
+}
+
+.image-list.has-size-section {
+  max-height: 120px;
 }
 
 .empty-tip {

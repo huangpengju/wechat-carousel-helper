@@ -68,8 +68,8 @@ async function collectSingleImage(imgElement) {
   if (existed) {
     showCopyTip('✅ 图片已采集');
     currentImages = await getImages();
-    renderImageList();
-    updateCarouselPreview();
+    await renderImageList();
+    // renderImageList 内部已调用 updateCarouselPreview
   } else {
     showCopyTip('⚠️ 图片已在列表中');
   }
@@ -103,15 +103,19 @@ function generateCarouselHTML(images) {
       const marginLeft = idx === 0 ? '0' : '4px';
       const marginRight = idx === n - 1 ? '0' : '4px';
       let imgHtml = `<img style="vertical-align: top; border-radius: 6px;" src="${img.url}" />`;
+      let wrapperStyle = `vertical-align: top; display: inline-block; text-align: center; font-size: 0; line-height: 0; margin: 0 ${marginRight} 0 ${marginLeft};`;
 
-      // 如果设置了参考高度，按比例调整宽度
+      // 如果设置了参考高度，用固定高度容器包裹图片
       if (targetImageSize && window._detectedSizes && window._detectedSizes[idx]) {
         const originalSize = window._detectedSizes[idx];
         const scaledWidth = Math.round(originalSize.width * (targetImageSize.height / originalSize.height));
-        imgHtml = `<img width="${scaledWidth}" height="${targetImageSize.height}" style="vertical-align: top; border-radius: 6px;" src="${img.url}" />`;
+        // 使用固定像素值 + !important 覆盖 WeChat 可能添加的任何默认样式
+        return `<section style="${wrapperStyle} width: ${scaledWidth}px; height: ${targetImageSize.height}px; overflow: hidden; border-radius: 6px; flex-shrink: 0;">
+  <img width="${scaledWidth}" height="${targetImageSize.height}" style="width: ${scaledWidth}px !important; height: ${targetImageSize.height}px !important; object-fit: cover !important; vertical-align: top; border-radius: 6px; display: block;" src="${img.url}" />
+</section>`;
       }
 
-      return `<section style="vertical-align: top; display: inline-block; text-align: center; font-size: 0; line-height: 0; margin: 0 ${marginRight} 0 ${marginLeft};">
+      return `<section style="${wrapperStyle}">
     ${imgHtml}
 </section>`;
     })
@@ -239,15 +243,13 @@ let pluginEnabled = true;
 
 function initPanel() {
   if (panel) return;
-  getPluginEnabled().then((enabled) => {
+  getPluginEnabled().then(async (enabled) => {
     pluginEnabled = enabled;
-    getImages().then((imgs) => {
-      currentImages = imgs;
-      createPanel();
-      renderImageList();
-      updateCarouselPreview();
-      updatePanelVisibility();
-    });
+    const imgs = await getImages();
+    currentImages = imgs;
+    createPanel();
+    await renderImageList();
+    updatePanelVisibility();
   });
 }
 
@@ -370,8 +372,8 @@ function bindPanelEvents() {
   document.getElementById('collectBtn').addEventListener('click', async () => {
     if (!pluginEnabled) return;
     currentImages = await collectFromEditor();
-    renderImageList();
-    updateCarouselPreview();
+    await renderImageList();
+    // renderImageList 内部已调用 updateCarouselPreview
   });
 
   document.getElementById('clearBtn').addEventListener('click', async () => {
@@ -379,8 +381,16 @@ function bindPanelEvents() {
     if (confirm('确定清空所有图片？')) {
       await clearImages();
       currentImages = [];
-      renderImageList();
-      updateCarouselPreview();
+      // 重置尺寸相关状态
+      targetImageSize = null;
+      window._detectedSizes = null;
+      // 隐藏尺寸统一区域
+      const section = document.getElementById('sizeSyncSection');
+      if (section) section.style.display = 'none';
+      const listEl = document.getElementById('imageList');
+      if (listEl) listEl.classList.remove('has-size-section');
+      await renderImageList();
+      // renderImageList 内部已调用 updateCarouselPreview
     }
   });
 
@@ -447,11 +457,12 @@ function bindPanelEvents() {
   });
 }
 
-// 检测图片尺寸并显示
+// 检测图片尺寸并显示（同步等待，确保尺寸检测完成后再返回）
 async function detectAndShowSizes() {
   const section = document.getElementById('sizeSyncSection');
   const sizeList = document.getElementById('sizeList');
   const syncBtn = document.getElementById('syncSizeBtn');
+  const listEl = document.getElementById('imageList');
 
   if (currentImages.length === 0) {
     showCopyTip('请先采集图片');
@@ -459,12 +470,15 @@ async function detectAndShowSizes() {
   }
 
   section.style.display = 'block';
+  listEl.classList.add('has-size-section');
   sizeList.innerHTML = '<div class="size-loading">检测图片尺寸中...</div>';
 
+  // 同步等待所有图片加载完成
   const sizes = await detectImageSizes(currentImages.map(img => img.url));
 
   if (sizes.length === 0) {
     sizeList.innerHTML = '<div class="size-loading">无法检测图片尺寸</div>';
+    listEl.classList.remove('has-size-section');
     return;
   }
 
@@ -519,7 +533,24 @@ function applySelectedSize() {
     return;
   }
 
+  // 检查尺寸是否已检测
+  if (!window._detectedSizes || window._detectedSizes.length === 0) {
+    showCopyTip('请等待图片尺寸检测完成');
+    return;
+  }
+
   const targetHeight = parseInt(selected.dataset.height);
+  const selectedIndex = parseInt(selected.dataset.index);
+
+  // 获取选中项对应的原始图片尺寸
+  const originalSize = window._detectedSizes[selectedIndex];
+  if (!originalSize) {
+    showCopyTip('无法获取选中图片的原始尺寸');
+    return;
+  }
+
+  // 计算按目标高度等比缩放后的宽度
+  const scaledWidth = Math.round(originalSize.width * (targetHeight / originalSize.height));
 
   targetImageSize = { height: targetHeight };
 
@@ -534,8 +565,8 @@ async function addImageByUrl(url) {
     return;
   }
   currentImages = await getImages();
-  renderImageList();
-  updateCarouselPreview();
+  await renderImageList();
+  // renderImageList 内部已调用 updateCarouselPreview
 }
 
 async function renderImageList() {
@@ -547,6 +578,8 @@ async function renderImageList() {
 
   if (currentImages.length === 0) {
     listEl.innerHTML = '<div class="empty-tip">暂无图片，请点击"一键采集"<br>或单击编辑区图片采集单张</div>';
+    // 清空尺寸列表
+    listEl.classList.remove('has-size-section');
     return;
   }
 
@@ -566,8 +599,8 @@ async function renderImageList() {
     })
     .join('');
 
-  // 自动检测图片尺寸
-  setTimeout(() => detectAndShowSizes(), 500);
+  // 检测图片尺寸并显示（同步等待，确保预览时尺寸已检测）
+  await detectAndShowSizes();
 
   listEl.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
@@ -586,8 +619,8 @@ async function renderImageList() {
         allImages.splice(newIdx, 0, moved);
         await saveImages(allImages);
         currentImages = allImages;
-        renderImageList();
-        updateCarouselPreview();
+        await renderImageList();
+        // renderImageList 内部已调用 updateCarouselPreview
         showCopyTip(`✅ 已移至第 ${newIdx + 1} 位`);
         setTimeout(() => {
           const item = listEl.querySelector(`[data-url="${url}"]`);
@@ -599,8 +632,8 @@ async function renderImageList() {
       } else if (action === 'delete') {
         await removeImage(url);
         currentImages = await getImages();
-        renderImageList();
-        updateCarouselPreview();
+        await renderImageList();
+        // renderImageList 内部已调用 updateCarouselPreview
       }
     });
   });
@@ -612,6 +645,9 @@ async function renderImageList() {
       navigator.clipboard.writeText(url).then(() => showCopyTip('链接已复制'));
     });
   });
+
+  // 尺寸检测完成后更新预览
+  updateCarouselPreview();
 }
 
 function updateCarouselPreview() {
