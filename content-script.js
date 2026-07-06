@@ -370,6 +370,7 @@ function bindPanelEvents() {
     await setPluginEnabled(pluginEnabled);
     updatePanelVisibility();
     if (!pluginEnabled) {
+      await clearImages();
       showCopyTip('🚫 插件已禁用');
     } else {
       showCopyTip('✅ 插件已启用');

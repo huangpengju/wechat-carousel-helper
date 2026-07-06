@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: 轮播图助手 v1.9.15 - 禁用插件时自动清空所有数据 *)",
+      "Bash(git push *)"
+    ]
+  }
+}
