@@ -100,8 +100,8 @@ function generateCarouselHTML(images) {
   // 图片区块
   const imgSections = images
     .map((img, idx) => {
-      const marginLeft = idx === 0 ? '0' : '4px';
-      const marginRight = idx === n - 1 ? '0' : '4px';
+      const marginLeft = idx === 0 ? '0' : '6px';
+      const marginRight = idx === n - 1 ? '0' : '6px';
       let imgHtml = `<img style="vertical-align: top; border-radius: 6px;" src="${img.url}" />`;
       let wrapperStyle = `vertical-align: top; display: inline-block; text-align: center; font-size: 0; line-height: 0; margin: 0 ${marginRight} 0 ${marginLeft};`;
 
@@ -133,8 +133,10 @@ function generateCarouselHTML(images) {
                 <section class="svg" data-json="${dataJson}">
                     <section style="transform: scale(1); line-height: 0; font-size: 0; padding: 0; margin: 0;">
                         <section style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; vertical-align: top; display: block; width: 100%;">
+                            <section style="background: #eee; padding: 8px 0; border-radius: 8px;">
                             <section id="${uid}" style="white-space: nowrap; overflow-x: scroll; overflow-y: hidden; line-height: 0; font-size: 0; display: inline-block; width: max-content; min-width: 100%;">
 ${imgSections}
+                            </section>
                             </section>
                         </section>
                         <section style="text-align: center; padding: 12px 0 0; font-size: 0;">
@@ -304,7 +306,7 @@ function createPanel() {
         <div class="size-list" id="sizeList"></div>
         <button class="btn-primary btn-small" id="syncSizeBtn" disabled>应用选中尺寸</button>
         <div class="custom-size-section" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-          <div style="font-size: 12px; color: #666; margin-bottom: 6px;">或自定义高度（宽度自动等比）</div>
+          <div style="font-size: 11px; color: #999; line-height: 1.5; margin-bottom: 6px;">或自定义高度（宽度自动等比）<br><span style="color: #07c160;">高度500建议-180，最终320</span></div>
           <div style="display: flex; gap: 6px; align-items: center;">
             <input type="number" id="customHeightInput" placeholder="输入高度，如 400" style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
             <span style="color: #999; font-size: 12px;">px</span>
