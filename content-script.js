@@ -371,6 +371,14 @@ function bindPanelEvents() {
     updatePanelVisibility();
     if (!pluginEnabled) {
       await clearImages();
+      currentImages = [];
+      targetImageSize = null;
+      window._detectedSizes = null;
+      const section = document.getElementById('sizeSyncSection');
+      if (section) section.style.display = 'none';
+      const listEl = document.getElementById('imageList');
+      if (listEl) listEl.classList.remove('has-size-section');
+      await renderImageList();
       showCopyTip('🚫 插件已禁用');
     } else {
       showCopyTip('✅ 插件已启用');
